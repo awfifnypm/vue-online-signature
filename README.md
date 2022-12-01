@@ -5,7 +5,7 @@
 本组件使用vue2.x版本开发，如果使用Vue3.x版本的项目，请使用Vue3.x版本组件，Vue3.x版本请不要使用当前组件，会出现未知BUG
 ## 版本提示
 1. Vue3.x npm链接 或 npm install vue3-online-signature --save
-2. Vue3.x gitee链接 https://github.com/awfifnypm/vue3-online-signature
+2. Vue3.x gitee链接 https://gitee.com/awfifnypm/vue3-online-signature
 
 ## 功能
 1. 兼容 PC 和 Mobile；
@@ -16,6 +16,7 @@
 6. 自定义画布背景（支持图片及图片背景重复）
 7. 自定义导出图背景（支持图片及图片背景重复，可生成与画布背景不一样背景的图片）
 8. 导出图片格式为 `base64`；
+9. 初始化布画恢复历史绘制数据或在已经的画布上恢复历史绘制数据
 [示例demo](http://b.wujiang.pro/)
 
 注： 本组件是基于vue-esign插件基础上进行二开和修改，使用方法与vue-esign插件有差异，建议查看本插件文档
@@ -60,7 +61,8 @@ data () {
       imgBack: '',
       isRepeat: '',
       noRotation: false,
-      backIsCenter: false
+      backIsCenter: false,
+      recoverPoints: []
     }
   }
 },
@@ -70,7 +72,8 @@ methods: {
   },
   handleGenerate () {
     this.$refs.vueSignatureRef.confirm().then(res => {
-      this.resultImg = res
+      imagesSRC.value = res.base64
+      sessionStorage.setItem('points', JSON.stringify(res.points))
     }).catch(err => {
       alert(err) // 画布没有签字时会执行这里 'Not Signned'
     })
@@ -99,16 +102,18 @@ methods: {
 | verticalDeductHeight | Number | 0 | 获取屏幕的宽高生成画布尺时，竖屏时高度需要减除的尺寸 |
 | acrossDeductWidth | Number | 0 | 获取屏幕的宽高生成画布尺时，横屏时宽度需要减除的尺寸 |
 | acrossDeductHeight | Number | 0 | 获取屏幕的宽高生成画布尺时，横屏时高度需要减除的尺寸 |
+| recoverPoints | Array | [] | 初始生成布画时，需要恢复到canvas画布上的笔画数据（此数据结构必须是confirm方法返回的结构，结构：[{x:0,y:0,direction:'across'}], direction参数有across和vertical） |
 
 | 方法  | 参数 | 说明 |
 | :-: | :-- | :-- |
 | onDrawingStatus | status | 返参可监听画板是否已绘画，true或false |
+| recoverDraw | Array | 通过此方式可在已生成的画布上，把已有的绘制笔画数据覆盖上去，（此数据结构必须是confirm方法返回的结构，结构：[{x:0,y:0,direction:'across'}], direction参数有across和vertical） |
 | onMouseDown | event | PC 当鼠标指针移动到元素上方，并按下鼠标按键（左、右键均可）时，会发生mousedown事件。 |
 | onMouseMove | event | PC 当鼠标指针移动时发生的事件。 |
 | onMouseUp | event | PC 当在元素上松开鼠标按键（左、右键均可）时，会发生 mouseup 事件。 |
 | onTouchStart | event | Mobile 当手指触摸屏幕时候触发。 |
-| onTouchMove | event | 当手指在屏幕上滑动的时候连续地触发。 |
-| onTouchEnd | event | 当手指从屏幕上离开的时候触发。 |
+| onTouchMove | event | Mobile 当手指在屏幕上滑动的时候连续地触发。 |
+| onTouchEnd | event | Mobile 当手指从屏幕上离开的时候触发。 |
 
 两个内置方法，通过给组件设置 `ref` 调用：
 
@@ -118,9 +123,10 @@ this.$refs.vueSignatureRef.reset()
 ```
 **生成图片**
 ```js
-this.$refs.vueSignatureRef.confirm.then(res => {
-  console.log(res) // base64图片
-}).catch(err => {
+this.$refs.vueSignatureRef.confirm().then(res => {
+      imagesSRC.value = res.base64
+      sessionStorage.setItem('points', JSON.stringify(res.points))
+  }).catch(err => {
   alert(err) // 画布没有签字时会执行这里 'Not Signned'
 })
 ```

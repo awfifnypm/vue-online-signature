@@ -76,6 +76,10 @@ export default {
     acrossDeductHeight: {
       type: Number,
       default: 0
+    },
+    recoverPoints: {
+      type: Array,
+      default: () => []
     }
   },
   data () {
@@ -463,10 +467,14 @@ export default {
       this.points.push({ x: -1, y: -1 })
     },
     autoDraw (canvasRef, canvas2d) {
-      if (this.points && this.points.length) {
+      if ((this.points && this.points.length) || (this.recoverPoints && this.recoverPoints.length)) {
         let canvas = canvasRef || this.$refs.canvasRef
         let canvasText = canvas2d || this.canvasTxt
-        this.points.reduce((acc, cur) => {
+        let pointsList = this.recoverPoints && this.recoverPoints.length ? this.recoverPoints : this.points
+        if (pointsList && pointsList.length) {
+          this.hasDrew = true
+        }
+        pointsList.reduce((acc, cur) => {
           if (cur.x != -1 && cur.y != -1 && acc.x != -1 && acc.y != -1) {
             canvasText.beginPath()
             let position = { accX: acc.x, accY: acc.y, curX: cur.x, curY: cur.y }
@@ -558,7 +566,11 @@ export default {
         let edg = (this.fullScreen && ((window.orientation == 0 || window.orientation == 180) || ((window.orientation == 90 || window.orientation == -90) && !this.noRotation))) || (window.orientation === undefined) && this.noRotation ? this.edg : 0
         this.rotateBase64Img(resultImgs, edg)
           .then(base64 => {
-            resolve(base64)
+            console.log(this.points, 'this.points')
+            resolve({
+              base64,
+              points: this.points
+            })
           })
       })
     },
@@ -576,6 +588,19 @@ export default {
         canvas.height = this.fullScreen ? this.screenPatams.height : this.height
         canvas.width = this.fullScreen ? this.screenPatams.width : this.width
       }
+    },
+    recoverDraw (pointsList = []) {
+      let canvas = this.$refs.canvasRef
+      this.canvasTxt.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      )
+      this.points = pointsList
+      this.hasDrew = true
+      this.resultImg = ''
+      this.setCanvasBack(true)
     }
   },
   mounted () {
@@ -586,7 +611,7 @@ export default {
     this.getImages()
     this.getDomSize()
     window.addEventListener('orientationchange', this.orientationchangeEvent)
-    this.resizeHandler(false)
+    this.resizeHandler(this.recoverPoints && this.recoverPoints.length)
     // 在画板以外松开鼠标后冻结画笔
     document.onmouseup = () => {
       this.isDrawing = false
